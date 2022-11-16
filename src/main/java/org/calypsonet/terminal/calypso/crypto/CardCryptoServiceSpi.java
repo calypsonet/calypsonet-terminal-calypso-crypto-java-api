@@ -11,9 +11,6 @@
  ************************************************************************************** */
 package org.calypsonet.terminal.calypso.crypto;
 
-import java.util.List;
-import org.calypsonet.terminal.calypso.card.CalypsoCard;
-
 /**
  * Calypso card cryptography service.
  *
@@ -22,93 +19,91 @@ import org.calypsonet.terminal.calypso.card.CalypsoCard;
  *
  * @since 1.0.0
  */
-public interface CardCryptoService {
+public interface CardCryptoServiceSpi {
+  /**
+   * Sets the key diversifier to use for the coming cryptographic computation.
+   *
+   * @param keyDiversifier A not empty byte array containing the key diversifier.
+   */
+  void setKeyDiversifier(byte[] keyDiversifier);
 
   /**
    * Initializes the crypto service context for operating a Secure Session with a card et gets the
    * terminal challenge.
    *
-   * @param calypsoCard The Calypso card.
-   * @param cardChallenge The card challenge.
    * @return The terminal challenge.
    * @since 1.0.0
    */
-  byte[] processTerminalSecureSessionContextInitialization(
-      CalypsoCard calypsoCard, byte[] cardChallenge);
+  byte[] initTerminalSecureSessionContext();
 
   /**
    * Stores the data needed to initialize the digest computation for a Secure Session.
    *
-   * @param openSecureSessionCommandDataOut The data out from the card Open Secure Session command.
+   * @param openSecureSessionDataOut The data out from the card Open Secure Session command.
    * @param kif The card KIF.
    * @param kvc The card KVC.
    * @since 1.0.0
    */
-  void prepareDigestInitialization(byte[] openSecureSessionCommandDataOut, byte kif, byte kvc);
+  void initTerminalSessionMac(byte[] openSecureSessionDataOut, byte kif, byte kvc);
 
   /**
-   * Gets the terminal certificate used for an early mutual authentication.
+   * Updates the digest computation with data sent or received from the card.
    *
-   * @return The terminal certificate.
+   * <p>Returns encrypted/decrypted data when the encryption is active.
+   *
+   * @param apdu A byte array containing either the input or output data of a card command APDU.
+   * @return null if the encryption is not activae, either the ciphered or deciphered command data
+   *     if the encryption is active.
    * @since 1.0.0
    */
-  byte[] processTerminalCertificateGeneration();
+  byte[] updateTerminalSessionMac(byte[] apdu);
 
   /**
-   * Stores the data needed to update the digest computation for a regular Secure Session, the
-   * actual digest computation may be performed later.
+   * Finalizes the digest computation and returns the terminal part of the session MAC.
    *
-   * @param apduDataIn A not empty list of APDU command data in.
-   * @param apduDataOut A not empty list of APDU command data out.
+   * @return A byte array containing the terminal session MAC.
    * @since 1.0.0
    */
-  void prepareDigestUpdate(List<byte[]> apduDataIn, List<byte[]> apduDataOut);
+  byte[] finalizeTerminalSessionMac();
 
   /**
-   * Updates the digest computation for an encrypted Secure Session and gets back either the command
-   * to be sent to the card or the decrypted data of the response received from the card.
+   * Generate the terminal part of the session MAC used for an early mutual authentication.
    *
-   * @param apduData A byte array containing either the input or output data of a card command APDU.
-   * @return Either the ciphered or deciphered command data.
-   * @since 1.0.0
+   * @return A byte array containing the terminal session MAC.
    */
-  byte[] processDigestUpdateWithEncryptedCardExchangeData(byte[] apduData);
+  byte[] generateTerminalSessionMac();
 
-  /**
-   * Finalizes the digest computation and returns the terminal part of the Secure Session
-   * certificate.
-   *
-   * @return The terminal certificate
-   * @since 1.0.0
-   */
-  byte[] processDigestFinalComputation();
+  /** Activate the encryption/decryption of the data sent/received during the secure session. */
+  void activateEncryption();
 
+  /** Deactivate the encryption/decryption of the data sent/received during the secure session. */
+  void deactivateEncryption();
   /**
-   * Verifies the card certificate.
+   * Verifies the card part of the session MAC finalizing the mutual authentication process.
    *
-   * @param cardCertificate The card certificate.
+   * @param cardSessionMac The card session MAC.
    * @return true if the card certificate is validated.
    * @since 1.0.0
    */
-  boolean processCardCertificateVerification(byte[] cardCertificate);
+  boolean verifyCardSessionMac(byte[] cardSessionMac);
 
   /**
    * Computes the needed data to operate SV card commands.
    *
-   * @param svData
-   * @return SV card command data.
+   * @param svCommandSecurityData The data involved in the preparation of an SV Reload/Debit/Undebit
+   *     command.
    * @since 1.0.0
    */
-  byte[] processSvSecurityDataComputation(byte[] svData);
+  void generateSvCommandSecurityData(SvCommandSecurityData svCommandSecurityData);
 
   /**
-   * Verifies the SV card certificate.
+   * Verifies the SV card MAC.
    *
-   * @param svCardCertificate The SV card certificate.
+   * @param cardSvMac The SV card MAC.
    * @return true if the SV card certificate is validated.
    * @since 1.0.0
    */
-  boolean processSvCardCertificateVerification(byte[] svCardCertificate);
+  boolean verifyCardSvMac(byte[] cardSvMac);
 
   /**
    * Computes a block of encrypted data to be sent to the card for an enciphered PIN presentation.
@@ -119,7 +114,7 @@ public interface CardCryptoService {
    * @return The encrypted data block to sent to the card.
    * @since 1.0.0
    */
-  byte[] processPinCipheringForPresentation(byte[] pin, byte kif, byte kvc);
+  byte[] cipherPinForPresentation(byte[] pin, byte kif, byte kvc);
 
   /**
    * Computes a block of encrypted data to be sent to the card for a PIN modification.
@@ -131,7 +126,7 @@ public interface CardCryptoService {
    * @return The encrypted data block to sent to the card.
    * @since 1.0.0
    */
-  byte[] processPinCipheringForModification(byte[] currentPin, byte[] newPin, byte kif, byte kvc);
+  byte[] cipherPinForModification(byte[] currentPin, byte[] newPin, byte kif, byte kvc);
 
   /**
    * Generates an encrypted key data block for loading a key into a card.
@@ -143,6 +138,6 @@ public interface CardCryptoService {
    * @return The encrypted data block to sent to the card.
    * @since 1.0.0
    */
-  byte[] processCardKeyGeneration(
+  byte[] generateCardKey(
       byte issuerKeyKif, byte issuerKeyKvc, byte targetKeyKif, byte targetKeyKvc);
 }

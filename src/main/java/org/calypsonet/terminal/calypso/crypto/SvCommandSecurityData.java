@@ -15,14 +15,67 @@ import org.calypsonet.terminal.calypso.transaction.SvAction;
 import org.calypsonet.terminal.calypso.transaction.SvOperation;
 
 /**
- * Contains the input/output data of the SV command operations (LOAD/DEBIT).
+ * Contains the input/output data of the SV command operations (LOAD/DEBIT/UNDEBIT).
  *
  * @since 1.0.0
  */
 public interface SvCommandSecurityData {
   /**
+   * Sets the "SV Get" ingoing command data.
+   *
+   * @param svGetRequest A not empty byte array containing the apdu request data.
+   * @return The object instance.
+   */
+  SvCommandSecurityData setSvGetRequest(byte[] svGetRequest);
+
+  /**
+   * Sets the "SV Get" outgoing command data.
+   *
+   * @param svGetResponse A not empty byte array containing the apdu response data.
+   * @return The object instance.
+   */
+  SvCommandSecurityData setSvGetResponse(byte[] svGetResponse);
+  /**
+   * Sets the "SV Load/Debit/Undebit" outgoing command data.
+   *
+   * @param svCommandRequest A not empty byte array containing the apdu request data.
+   * @return The object instance.
+   */
+  SvCommandSecurityData setSvCommandRequest(byte[] svCommandRequest);
+
+  /**
+   * Gets the serial number to be placed in the "SV Load/Debit/Undebit" command request.
+   *
+   * @return A not byte array containing the serial number.
+   */
+  byte[] getSerialNumber();
+
+  /**
+   * Gets the transaction number to be placed in the "SV Load/Debit/Undebit" command request.
+   *
+   * @return A not byte array containing the transaction number.
+   */
+  byte[] getTransactionNumber();
+
+  /**
+   * Gets the terminal challenge to be placed in the SV Load/Debit/Undebit command request.
+   *
+   * @return A not byte array containing the terminal challenge.
+   */
+  byte[] getTerminalChallenge();
+
+  /**
+   * Gets the terminal SV MAC to be placed in the "SV Load/Debit/Undebit" command request.
+   *
+   * @return A not byte array containing the terminal SV MAC.
+   */
+  byte[] getTerminalSvMac();
+
+  /**
    * Gets the current {@link SvOperation}.
+   *
    * <p>
+   *
    * @return A not null {@link SvOperation}.
    * @since 1.0.0
    */
